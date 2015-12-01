@@ -2,85 +2,87 @@ module Relational
 
 import Base: select, join
 
-export Schema, select, where, join, groupby, agg, count
+export Relation, select, where, join, groupby, agg, count
 
 include("attribute.jl")
 
-abstract Relation
+abstract AbstractRelation
 
-immutable Schema <: Relation
+immutable Relation <: AbstractRelation
     name::Symbol
     attrs::Tuple
     _lookup::Dict
-    Schema(n, attrs) =
+    Relation(n, attrs) =
        new(n, attrs, Dict([name(a) => a for a in attrs]))
 end
-Schema(attrs) = Schema(:_, attrs)
-schema(x::Schema) = x
+Relation(attrs) = Relation(:_, attrs)
+fieldset(x::Relation) = x
+
 include("source.jl") # Actual data sources, courtesy DataStreams
 
-### Schema+Attr ###
+### Relation+Attr ###
 immutable QualifiedAttr{T} <: Attr{T}
-    schema::Schema
+    relation::Relation
     attr::Attr{T}
 end
 name(x::QualifiedAttr) = name(x.attr)
-Base.getindex(s::Schema, x) = QualifiedAttr(s, s._lookup[x])
-Base.getindex(s::Schema, x::String) = s[symbol(x)]
+Base.getindex(s::Relation, x) = QualifiedAttr(s, s._lookup[x])
+Base.getindex(s::Relation, x::String) = s[symbol(x)]
 
-Base.getindex(s::Relation, x) = schema(s)[x]
+Base.getindex(s::AbstractRelation, x) = fieldset(s)[x]
 ### Projection ###
 
-immutable Select <: Relation
-    from::Relation
-    schema::Schema
+immutable Select <: AbstractRelation
+    from::AbstractRelation
+    relation::Relation
 end
-select(from, fields::Tuple) = Select(from, Schema(schema(from).name, fields))
-select(from, fields::Attr) = Select(from, Schema(schema(from).name, (fields,)))
-schema(x::Schema) = x.schema
+select(from, fields::Tuple) = Select(from, Relation(fieldset(from).name, fields))
+select(from, fields::Attr) = Select(from, Relation(fieldset(from).name, (fields,)))
+fieldset(x::Relation) = x.relation
 
 ### Selection ###
 
-immutable Where <: Relation
-    source::Relation
+immutable Where <: AbstractRelation
+    source::AbstractRelation
     predicate::Attr{Bool}
 end
 where(source, attr) = Where(source, attr)
-schema(x::Where) = schema(x.source)
+fieldset(x::Where) = fieldset(x.source)
 
 ### Join ###
 
-immutable Join <: Relation
-    l::Relation
-    r::Relation
+immutable Join <: AbstractRelation
+    l::AbstractRelation
+    r::AbstractRelation
     link::Attr
 end
 join(l, r, link) = Join(l,r, link)
-schema(x::Join) = schema(x.l) # TODO: Merge schema
+fieldset(x::Join) = fieldset(x.l) # TODO: Merge relation
 
 ### GroupBy ###
 
-immutable GroupBy <: Relation
-    source::Relation
+immutable GroupBy <: AbstractRelation
+    source::AbstractRelation
     grouping::Tuple{Attr}
 end
 groupby(source, g) = GroupBy(source, g)
 groupby(source, g::Attr) = GroupBy(source, (g,))
-schema(x::GroupBy) = schema(x.source)
+fieldset(x::GroupBy) = fieldset(x.source)
 
 ### Aggregate ###
 
-immutable Aggregate <: Relation
-    source::Relation
+immutable Aggregate <: AbstractRelation
+    source::AbstractRelation
     aggregator::Aggregator
 end
 agg(r, a::Aggregator) = Aggregate(r, a)
 agg(r, a::Function) = Aggregate(r, ReduceAgg(a))
-schema(x::Aggregate) = schema(x.source)
+fieldset(x::Aggregate) = fieldset(x.source)
 
-Base.sum(r::Relation, f::Attr) = agg(r, Sum(f))
-Base.mean(r::Relation, f::Attr) = agg(r, Avg(f))
-count(r::Relation) = agg(r, Count())
+Base.sum(r::AbstractRelation, f::Attr) = agg(r, Sum(f))
+Base.mean(r::AbstractRelation, f::Attr) = agg(r, Avg(f))
+count(r::AbstractRelation) = agg(r, Count())
 
 include("show.jl")
+
 end # module

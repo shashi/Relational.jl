@@ -13,7 +13,7 @@ Example:
 using Relational, CSV
 
 cd(Pkg.dir("Relational", "test"))
-data = DataStreamRelation(:sample, CSV.read("sampledata.csv"))
+data = Relation(:sample, CSV.read("sampledata.csv"))
 
 query = select(where(data, data[:col2] + data[:col3] <= mean(data, data[:col4])), data[:col1])
 # output: SELECT sample.col1 WHERE ((sample.col2 + sample.col3) <=  avg(sample.col4))

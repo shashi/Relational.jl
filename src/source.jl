@@ -2,20 +2,18 @@
 
 using DataStreams
 
-export DataStreamRelation
-
-immutable DataStreamRelation{T<:Data.Source} <: Relation
+immutable DataStreamRelation{T<:Data.Source} <: AbstractRelation
     source::T
-    schema::Schema
+    relation::Relation
 end
 
-function convert_schema(source, name=:_)
+function convert_fieldset(source, name=:_)
     sch = Data.schema(source)
-    Schema(name, ([Field{sch.types[i]}(symbol(sch.header[i]))
+    Relation(name, ([Field{sch.types[i]}(symbol(sch.header[i]))
         for i=1:length(sch.header)]...,))
 end
 
-DataStreamRelation(name::Symbol, source) = DataStreamRelation(source, convert_schema(source, name))
-DataStreamRelation(source) = DataStreamRelation(source, convert_schema(source))
-schema(x::DataStreamRelation) = x.schema
+Relation(name::Symbol, source::Data.Source) = DataStreamRelation(source, convert_fieldset(source, name))
+Relation(source::Data.Source) = DataStreamRelation(source, convert_fieldset(source))
+fieldset(x::DataStreamRelation) = x.relation
 Base.convert(::Type{Relation}, source::Data.Source) = DataStreamRelation(source)

@@ -2,9 +2,9 @@
 
 **Work in progress.** Relational is a high-level library for expressing relational data operations.
 
-Currently, DataStreams.jl interface can be used to create a relation which will act as the root node for queries. `DataStream(::Data.Source) -> Relation` can be used to create a Relation from a DataStreams.Data.Source object.
+Currently, DataStreams.jl interface can be used to create a relation which will act as the root node for queries. `Relation(::Data.Source)` can be used to create a Relation from a `DataStreams.Data.Source` object.
 
-`Select`, `Where`, `Join`, `GroupBy`, `Aggregate` are relational-algebra nodes. The `schema` function returns a `Schema` object which can be used to construct queries.
+`Select`, `Where`, `Join`, `GroupBy`, `Aggregate` are relational-algebra nodes. The `fieldset` function returns a `Relation` object which can be used to construct queries.
 
 
 Example:
